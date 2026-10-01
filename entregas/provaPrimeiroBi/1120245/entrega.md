@@ -2,7 +2,7 @@
 
 **Aluno:** Matheus Mantovani  
 **RA:** 1120245  
-**Data:** [preencher no dia da prova]  
+**Data:** 2026-10-01  
 **Ferramenta de IA utilizada:** Kiro (Spec-Driven Development)
 
 ## Repositório do Projeto
@@ -23,46 +23,56 @@
 - [x] Uso de LabRole/LabInstanceProfile (sem criar IAM próprio)
 - [x] terraform validate e terraform plan sem erros
 - [x] relatorio.md completo (4 questões)
-- [ ] terraform destroy executado após evidências
+- [x] terraform destroy executado após evidências
 
 ## Evidências
 
-### Docker Build
+As evidências estão organizadas em `evidencias/screenshots/` no repositório do projeto.
+
+| Print | Arquivo | O que mostra |
+|-------|---------|-------------|
+| Git | `GIT HISTORICO.png` | 13 commits, Conventional Commits, feature branches com merge |
+| Docker Build | `DOCKER_IMAGEM.png` | Imagem `api-reservas:1.0` multi-stage, usuário não-root |
+| Docker Compose | `DOCKER_PS.png` | `reservas-api` Up + `reservas-db` **(healthy)** |
+| API /health | `API_HEALTH.png` | `{"status":"ok"}` na porta 3000 |
+| API CRUD | `API_CRUD.png` | POST, GET, PUT, DELETE + 404 após delete |
+| API AWS | `API_AWS.png` | CRUD completo rodando na EC2 contra RDS |
+| Terraform módulos | `TERRAFORM_MODULOS.png` | Pastas `vpc`, `security-group`, `ec2`, `rds` |
+| Terraform validate | `TERRAFORM_VALIDADE.png` | `Success! The configuration is valid.` |
+| Terraform plan | `TERRAFORM_PLAN.png` | `Plan: 14 to add, 0 to change, 0 to destroy` |
+| Terraform outputs | `TERRAFORM_OUTPUTS.png` | IP da EC2, endpoint do RDS, URL da API |
+| Terraform destroy | `TERRAFORM_DESTROY.png` | `Destroy complete! Resources: 14 destroyed.` |
+
+### Terraform Outputs — AWS
+
 ```
-[+] Building 12.8s (13/13) FINISHED
- => [builder 4/4] RUN npm install --omit=dev
- => [stage-1 6/6] RUN addgroup -S appgroup && adduser -S appuser -G appgroup
- => naming to docker.io/library/api-reservas:1.0
+api_url        = "http://54.234.242.166:3000"
+ec2_public_ip  = "54.234.242.166"
+ec2_public_dns = "ec2-54-234-242-166.compute-1.amazonaws.com"
+rds_endpoint   = "reservas-rds.cpmnqfiwmifd.us-east-1.rds.amazonaws.com:5432"
+rds_host       = "reservas-rds.cpmnqfiwmifd.us-east-1.rds.amazonaws.com"
 ```
 
-### Docker Compose PS
+### API CRUD — Ambiente Local (Docker Compose + PostgreSQL)
+
 ```
-NAME           IMAGE                                STATUS
-reservas-api   prova-primeiro-bimestre-devops-api   Up 2 minutes
-reservas-db    postgres:15-alpine                   Up 2 minutes (healthy)
+GET  /health  → {"status":"ok","timestamp":"2026-10-01T16:53:46.433Z"}
+POST /reservas → {"id":5,"cliente":"Matheus Mantovani","data":"2026-10-01T00:00:00.000Z","status":"confirmada"}
+GET  /reservas → [{"id":4,...},{"id":5,...},{"id":6,...}]
+GET  /reservas/5 → {"id":5,"cliente":"Matheus Mantovani",...}
+PUT  /reservas/6 → {"id":6,...,"status":"confirmada"}
+DELETE /reservas/5 → {"mensagem":"Reserva removida com sucesso.",...}
+GET  /reservas/5 (após delete) → {"erro":"Reserva não encontrada."} HTTP 404
 ```
 
-### Terraform Plan
-```
-Plan: 14 to add, 0 to change, 0 to destroy.
-```
+### API CRUD — AWS (EC2 + RDS PostgreSQL)
 
-### Terraform Apply — Outputs
 ```
-api_url        = "http://98.81.51.238:3000"
-ec2_public_ip  = "98.81.51.238"
-ec2_public_dns = "ec2-98-81-51-238.compute-1.amazonaws.com"
-rds_endpoint   = "reservas-rds.ceiks7fjab1o.us-east-1.rds.amazonaws.com:5432"
-rds_host       = "reservas-rds.ceiks7fjab1o.us-east-1.rds.amazonaws.com"
-```
-
-### API funcionando na AWS (RDS)
-```
-GET  /health                → {"status":"ok"}
-POST /reservas              → {"id":1,"cliente":"Matheus Mantovani","data":"2026-10-01","status":"confirmada"}
-GET  /reservas              → [{"id":1,...},{"id":2,...}]
-GET  /reservas/1            → {"id":1,"cliente":"Matheus Mantovani",...}
-PUT  /reservas/2            → {"id":2,...,"status":"confirmada"}
-DELETE /reservas/1          → {"mensagem":"Removida.",...}
-GET  /reservas/1 (pós delete) → {"erro":"Reserva nao encontrada."} HTTP 404
+GET  /health  → {"status":"ok"}
+POST /reservas → {"id":1,"cliente":"Matheus Mantovani","data":"2026-10-01","status":"confirmada"}
+GET  /reservas → [{"id":1,...},{"id":2,...}]
+GET  /reservas/1 → {"id":1,"cliente":"Matheus Mantovani",...}
+PUT  /reservas/2 → {"id":2,...,"status":"confirmada"}
+DELETE /reservas/1 → {"mensagem":"Reserva removida com sucesso.",...}
+GET  /reservas/1 (após delete) → {"erro":"Reserva não encontrada."} HTTP 404
 ```
